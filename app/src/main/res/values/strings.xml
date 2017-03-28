@@ -5,4 +5,8 @@
     <string name="navigation_drawer_close">Close navigation drawer</string>
 
     <string name="action_settings">Settings</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_first_fragment">Hello blank first fragment</string>
+    <string name="hello_blank_second_fragment">Hello blank second fragment</string>
 </resources>
