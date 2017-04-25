@@ -15,6 +15,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import org.eclipse.paho.client.mqttv3.MqttException;
+
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener,
         FirstFragment.OnFragmentInteractionListener,
@@ -79,8 +81,13 @@ public class MainActivity extends AppCompatActivity
         Fragment fragment = null;
 
         if (id == R.id.nav_camera) {
-            ServerConnector connector = new ServerConnector(getApplicationContext());
-            connector.execute("");
+            try {
+                Connection connection = new Connection(getApplicationContext());
+            } catch (MqttException e) {
+                e.printStackTrace();
+            }
+            //ServerConnector connector = new ServerConnector(getApplicationContext());
+            //connector.execute("");
             fragment = new FirstFragment();
 
         } else if (id == R.id.nav_gallery) {

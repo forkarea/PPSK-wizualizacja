@@ -71,18 +71,7 @@ public class FirstFragment extends Fragment {
         return inflater.inflate(R.layout.fragment_first, container, false);
     }
 
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener) {
-            mListener = (OnFragmentInteractionListener) context;
-        } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
-        }
-    }
-
-    @Override
+     @Override
     public void onDetach() {
         super.onDetach();
         mListener = null;
