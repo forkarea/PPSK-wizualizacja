@@ -1,12 +1,5 @@
 <resources>
-    <string name="app_name">PPSK-wizualizacja</string>
-
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
-
-    <string name="action_settings">Settings</string>
-
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_first_fragment">Hello blank first fragment</string>
-    <string name="hello_blank_second_fragment">Hello blank second fragment</string>
+    <string name="app_name">Beckhoff</string>
+    <string name="title_heat_exchanger">Wymiennik ciepła</string>
+    <string name="title_heater">Podgrzewacz</string>
 </resources>

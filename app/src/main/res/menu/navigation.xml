@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/navigation_heat_exchanger"
+        android:icon="@drawable/water_heater"
+        android:title="@string/title_heat_exchanger" />
+
+    <item
+        android:id="@+id/navigation_heater"
+        android:icon="@drawable/lighter"
+        android:title="@string/title_heater" />
+
+</menu>

@@ -2,115 +2,260 @@ package com.ppsk.ppsk_wizualizacja;
 
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.NavigationView;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.Fragment;
-import android.support.v4.view.GravityCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.Toast;
 
+import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener,
-        FirstFragment.OnFragmentInteractionListener,
-        SecondFragment.OnFragmentInteractionListener {
+public class MainActivity extends AppCompatActivity implements MqttCallback {
+
+    public MqttMessage message;
+    public MqttMessage messageHeater;
+    private Button b1;
+    private final String topic = "door/status";
+    private ImageView imageView1;
+    public MqttAndroidClient client;
+    private int qos;
+    private boolean button1IsPressed = false;
+
+    private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
+            = new BottomNavigationView.OnNavigationItemSelectedListener() {
+
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            switch (item.getItemId()) {
+                case R.id.navigation_heat_exchanger:
+                    titleChange(R.string.title_heat_exchanger);
+                    imageView1 = (ImageView) findViewById(R.id.imageView1);
+                    if(message.toString().equals(" ")) {
+                        imageView1.setImageResource(R.drawable.heat_exchanger_icon_n);
+                    } else if(message.toString().equals("open")) {
+                        imageView1.setImageResource(R.drawable.heat_exchanger_icon_on);
+                    } else {
+                        imageView1.setImageResource(R.drawable.heat_exchanger_icon_off);
+                    }
+                    b1 = (Button) findViewById(R.id.button1);
+                    qos = 1;
+                    b1.setText(R.string.title_heat_exchanger);
+                    b1.setOnClickListener(new View.OnClickListener() {
+                        public void onClick(View v) {
+                            if(message.toString().equals("open")) {
+                                message = new MqttMessage("close".getBytes());
+                                imageView1.setImageResource(R.drawable.heat_exchanger_icon_off);
+                            } else{
+                                message = new MqttMessage("open".getBytes());
+                                imageView1.setImageResource(R.drawable.heat_exchanger_icon_on);
+                            }
+                            publish(client,message);
+                        }
+                    });
+                    return true;
+                case R.id.navigation_heater:
+                    titleChange(R.string.title_heater);
+                    imageView1 = (ImageView) findViewById(R.id.imageView1);
+                    if(messageHeater.toString().equals(" ")) {
+                        imageView1.setImageResource(R.drawable.heat_exchanger_icon_n);
+                    } else if(messageHeater.toString().equals("open")) {
+                        imageView1.setImageResource(R.drawable.heat_exchanger_icon_on);
+                    } else{
+                        imageView1.setImageResource(R.drawable.heat_exchanger_icon_off);
+                    }
+                    b1 = (Button) findViewById(R.id.button1);
+                    qos = 2;
+                    b1.setText(R.string.title_heater);
+                    b1.setOnClickListener(new View.OnClickListener() {
+                        public void onClick(View v) {
+                            if(messageHeater.toString().equals("open")) {
+                                messageHeater = new MqttMessage("close".getBytes());
+                                imageView1.setImageResource(R.drawable.heat_exchanger_icon_off);
+                            } else {
+                                messageHeater = new MqttMessage("open".getBytes());
+                                imageView1.setImageResource(R.drawable.heat_exchanger_icon_on);
+                            }
+                            publish(client,messageHeater);
+                        }
+                    });
+                    return true;
+            }
+            return false;
+        }
+
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
-        drawer.addDrawerListener(toggle);
-        toggle.syncState();
+        titleChange(R.string.title_heat_exchanger);
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
+        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
-    }
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
+        options.setUserName("tkykagdm");
+        options.setPassword("lEtftZCEXKc1".toCharArray());
+        String clientId = MqttClient.generateClientId();
 
-    @Override
-    public void onBackPressed() {
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        if (drawer.isDrawerOpen(GravityCompat.START)) {
-            drawer.closeDrawer(GravityCompat.START);
+        message = new MqttMessage(" ".getBytes());
+        messageHeater = new MqttMessage(" ".getBytes());
+
+        imageView1 = (ImageView) findViewById(R.id.imageView1);
+        if(message.toString().equals(" ")) {
+            imageView1.setImageResource(R.drawable.heat_exchanger_icon_n);
+        } else if(message.toString().equals("open")) {
+            imageView1.setImageResource(R.drawable.heat_exchanger_icon_on);
         } else {
-            super.onBackPressed();
+            imageView1.setImageResource(R.drawable.heat_exchanger_icon_off);
         }
+
+
+        client = new MqttAndroidClient(this.getApplicationContext(), "tcp://m11.cloudmqtt.com:15498", clientId);
+        final MqttAndroidClient client1 = new MqttAndroidClient(this.getApplicationContext(), "tcp://m11.cloudmqtt.com:15498", clientId);
+
+        b1 = (Button) findViewById(R.id.button1);
+        qos = 1;
+        b1.setText(R.string.title_heat_exchanger);
+        if (b1 != null) {
+            b1.setOnTouchListener(new View.OnTouchListener() {
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    if(event.getAction() == MotionEvent.ACTION_DOWN) {
+                        button1IsPressed=true;
+                        if (message.toString().equals("open")) {
+                            message = new MqttMessage("close".getBytes());
+                            imageView1.setImageResource(R.drawable.heat_exchanger_icon_off);
+                            publish(client1, message);
+                        } else {
+                            message = new MqttMessage("open".getBytes());
+                            imageView1.setImageResource(R.drawable.heat_exchanger_icon_on);
+                            publish(client1, message);
+                        }
+                    } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                        button1IsPressed=false;
+                    }
+                    return button1IsPressed;
+                }
+            });
+        }
+
+        try {
+            IMqttToken token = client.connect(options);
+            token.setActionCallback(new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    client.setCallback(MainActivity.this);
+
+                    try {
+                        IMqttToken subToken = client.subscribe(topic, qos);
+                        subToken.setActionCallback(new IMqttActionListener() {
+                            @Override
+                            public void onSuccess(IMqttToken asyncActionToken) {
+                                client.close();
+                            }
+
+                            @Override
+                            public void onFailure(IMqttToken asyncActionToken,
+                                                  Throwable exception) {
+                                Toast.makeText(MainActivity.this, "Nie można połączyć z: " + topic, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    } catch (MqttException | NullPointerException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    Toast.makeText(MainActivity.this, "Brak połączenia ze sterownikiem", Toast.LENGTH_SHORT).show();
+                }
+            });
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
+    public void connectionLost(Throwable cause) {
+
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+    public void messageArrived(String topic, MqttMessage message) throws Exception {
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        if(message.toString().equals("close")) {
+            imageView1.setImageResource(R.drawable.heat_exchanger_icon_off);
+        } else {
+            imageView1.setImageResource(R.drawable.heat_exchanger_icon_on);
         }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @SuppressWarnings("StatementWithEmptyBody")
-    @Override
-    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-        // Handle navigation view item clicks here.
-        int id = item.getItemId();
-
-        Fragment fragment = null;
-
-        if (id == R.id.nav_camera) {
-            try {
-                Connection connection = new Connection(getApplicationContext());
-            } catch (MqttException e) {
-                e.printStackTrace();
-            }
-            //ServerConnector connector = new ServerConnector(getApplicationContext());
-            //connector.execute("");
-            fragment = new FirstFragment();
-
-        } else if (id == R.id.nav_gallery) {
-            fragment = new SecondFragment();
-        }
-
-        if (findViewById(R.id.fragment_container) != null) {
-            if (fragment != null) {
-                fragment.setArguments(getIntent().getExtras());
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, fragment).commit();
-            }
-        }
-
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
-        return true;
+        this.message = message;
     }
 
     @Override
-    public void onFragmentInteraction(String title) {
-        if(getSupportActionBar() != null) {
-            getSupportActionBar().setTitle(title);
+    public void deliveryComplete(IMqttDeliveryToken token) {
+
+    }
+
+    public synchronized void publish(final MqttAndroidClient client, final MqttMessage message)
+    {
+        MqttConnectOptions options = new MqttConnectOptions();
+        options.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1);
+        try {
+            IMqttToken token = client.connect(options);
+            token.setActionCallback(new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    client.setCallback(MainActivity.this);
+
+                    final String topic = "door/status";
+                    try {
+                        IMqttToken subToken = client.publish(topic, message);
+                        subToken.setActionCallback(new IMqttActionListener() {
+                            @Override
+                            public void onSuccess(IMqttToken asyncActionToken) {
+                                client.close();
+                            }
+
+                            @Override
+                            public void onFailure(IMqttToken asyncActionToken,
+                                                  Throwable exception) {
+
+                            }
+                        });
+                    } catch (MqttException | NullPointerException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    Toast.makeText(MainActivity.this, "Brak połączenia ze sterownikiem", Toast.LENGTH_SHORT).show();
+
+                }
+            });
+        } catch (MqttException e) {
+            e.printStackTrace();
         }
+    }
+
+    protected void titleChange(int title) {
+        setTitle(title);
     }
 }
+
